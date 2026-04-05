@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Claude Code Bootcamp</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <h1>Japan CMT Claude Code Bootcamp</h1>
+    </div>
+    <div class="header-right">
+      <span id="participant-name"></span>
+      <div class="progress-badge">
+        <span id="progress-count">0</span>/8 modules
+      </div>
+      <button class="btn btn-small btn-outline" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+    </div>
+
+    <div class="modules-grid" id="modules-grid">
+      <!-- Populated by JS -->
+    </div>
+  </main>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

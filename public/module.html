@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module — Claude Code Bootcamp</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <a href="/dashboard.html" class="back-link">&larr; Back to Dashboard</a>
+    </div>
+    <div class="header-right">
+      <span id="module-title-header"></span>
+    </div>
+  </header>
+
+  <main class="module-layout">
+    <div class="module-content" id="module-content">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="chatbot-panel">
+      <div class="chatbot-header">
+        <h3>AI Tutor</h3>
+        <span class="chatbot-status" id="chatbot-status">Online</span>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-message assistant">
+          <div class="chat-bubble">Hi there! I'm your AI tutor for this module. Ask me anything — no question is too basic!</div>
+        </div>
+      </div>
+      <form class="chat-input-form" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Ask your tutor anything..." autocomplete="off">
+        <button type="submit" class="btn btn-primary" id="chat-send">Send</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="module-actions">
+    <button class="btn btn-primary btn-large" id="complete-btn" style="display:none;">Mark Module as Complete</button>
+  </div>
+
+  <!-- Mobile chatbot toggle -->
+  <button class="chatbot-toggle" id="chatbot-toggle">
+    <span>Chat with Tutor</span>
+  </button>
+
+  <script src="/js/chatbot.js"></script>
+  <script src="/js/module.js"></script>
+</body>
+</html>
