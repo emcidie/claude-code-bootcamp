@@ -2,12 +2,12 @@ const API = '';
 const token = localStorage.getItem('bootcamp_token');
 const name = localStorage.getItem('bootcamp_name');
 
-if (!token) window.location.href = '/';
+if (!token) window.location.href = './';
 
 document.getElementById('participant-name').textContent = name || 'Participant';
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.clear();
-  window.location.href = '/';
+  window.location.href = './';
 });
 
 async function loadDashboard() {
@@ -70,7 +70,7 @@ async function loadDashboard() {
       if (!isLocked) {
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
-          window.location.href = `/module.html?id=${mod.id}`;
+          window.location.href = `module.html?id=${mod.id}`;
         });
       }
 

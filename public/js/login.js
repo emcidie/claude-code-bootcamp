@@ -10,7 +10,7 @@ const API = '';
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      window.location.href = '/dashboard.html';
+      window.location.href = 'dashboard.html';
     } else {
       localStorage.removeItem('bootcamp_token');
     }
@@ -37,7 +37,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const data = await res.json();
     localStorage.setItem('bootcamp_token', data.sessionToken);
     localStorage.setItem('bootcamp_name', data.name);
-    window.location.href = '/dashboard.html';
+    window.location.href = 'dashboard.html';
   } catch (err) {
     alert('Something went wrong. Please try again.');
     btn.disabled = false;

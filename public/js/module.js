@@ -1,10 +1,10 @@
 const API = '';
 const token = localStorage.getItem('bootcamp_token');
-if (!token) window.location.href = '/';
+if (!token) window.location.href = './';
 
 const params = new URLSearchParams(window.location.search);
 const moduleId = parseInt(params.get('id'));
-if (!moduleId) window.location.href = '/dashboard.html';
+if (!moduleId) window.location.href = 'dashboard.html';
 
 let chatbot;
 
@@ -96,7 +96,7 @@ async function loadModule() {
         completeBtn.textContent = 'Completed!';
         completeBtn.disabled = true;
         completeBtn.classList.add('btn-completed');
-        setTimeout(() => window.location.href = '/dashboard.html', 1000);
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
       });
     } else {
       completeBtn.style.display = 'none';
@@ -163,7 +163,7 @@ async function submitAnswer(questionIndex) {
         completeBtn.textContent = 'Completed!';
         completeBtn.disabled = true;
         completeBtn.classList.add('btn-completed');
-        setTimeout(() => window.location.href = '/dashboard.html', 1000);
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
       });
     }
   } catch (err) {
