@@ -1,4 +1,3 @@
-const API = '';
 const token = localStorage.getItem('bootcamp_token');
 const name = localStorage.getItem('bootcamp_name');
 
@@ -15,8 +14,8 @@ async function loadDashboard() {
 
   try {
     const [currRes, progRes] = await Promise.all([
-      fetch(`${API}/api/curriculum`),
-      fetch(`${API}/api/progress`, { headers })
+      fetch(`api/curriculum`),
+      fetch(`api/progress`, { headers })
     ]);
 
     const curriculum = await currRes.json();

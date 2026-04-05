@@ -17,7 +17,7 @@ class Chatbot {
 
   async loadHistory() {
     try {
-      const res = await fetch(`/api/chat/${this.moduleId}/history`, {
+      const res = await fetch(`api/chat/${this.moduleId}/history`, {
         headers: { 'Authorization': `Bearer ${this.token}` }
       });
       const messages = await res.json();
@@ -69,7 +69,7 @@ class Chatbot {
     const bubble = this.createStreamingMessage();
 
     try {
-      const res = await fetch(`/api/chat/${this.moduleId}`, {
+      const res = await fetch(`api/chat/${this.moduleId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

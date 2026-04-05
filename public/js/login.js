@@ -1,12 +1,10 @@
-const API = '';
-
 // Check for existing session
 (async function checkSession() {
   const token = localStorage.getItem('bootcamp_token');
   if (!token) return;
 
   try {
-    const res = await fetch(`${API}/api/me`, {
+    const res = await fetch(`api/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
@@ -29,7 +27,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   btn.textContent = 'Starting...';
 
   try {
-    const res = await fetch(`${API}/api/login`, {
+    const res = await fetch(`api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name })

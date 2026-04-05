@@ -1,4 +1,3 @@
-const API = '';
 const token = localStorage.getItem('bootcamp_token');
 if (!token) window.location.href = './';
 
@@ -14,9 +13,9 @@ async function loadModule() {
   try {
     // Load module content, progress, and assessments in parallel
     const [modRes, progRes, assessRes] = await Promise.all([
-      fetch(`${API}/api/curriculum/${moduleId}`),
-      fetch(`${API}/api/progress`, { headers }),
-      fetch(`${API}/api/assessments/${moduleId}`, { headers })
+      fetch(`api/curriculum/${moduleId}`),
+      fetch(`api/progress`, { headers }),
+      fetch(`api/assessments/${moduleId}`, { headers })
     ]);
 
     const mod = await modRes.json();
@@ -76,7 +75,7 @@ async function loadModule() {
     // Mark as started
     const currentProgress = progress.find(p => p.module_id === moduleId);
     if (!currentProgress || currentProgress.status === 'not_started') {
-      await fetch(`${API}/api/progress/${moduleId}/start`, { method: 'POST', headers });
+      await fetch(`api/progress/${moduleId}/start`, { method: 'POST', headers });
     }
 
     // Show complete button only if all questions are answered
@@ -92,7 +91,7 @@ async function loadModule() {
     } else if (allAnswered) {
       completeBtn.style.display = 'block';
       completeBtn.addEventListener('click', async () => {
-        await fetch(`${API}/api/progress/${moduleId}/complete`, { method: 'POST', headers });
+        await fetch(`api/progress/${moduleId}/complete`, { method: 'POST', headers });
         completeBtn.textContent = 'Completed!';
         completeBtn.disabled = true;
         completeBtn.classList.add('btn-completed');
@@ -124,7 +123,7 @@ async function submitAnswer(questionIndex) {
   scoreEl.innerHTML = '<span class="grading-spinner">Evaluating your answer...</span>';
 
   try {
-    const res = await fetch(`${API}/api/assessments/${moduleId}`, {
+    const res = await fetch(`api/assessments/${moduleId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -159,7 +158,7 @@ async function submitAnswer(questionIndex) {
       completeBtn.style.display = 'block';
       completeBtn.addEventListener('click', async () => {
         const headers = { 'Authorization': `Bearer ${token}` };
-        await fetch(`${API}/api/progress/${moduleId}/complete`, { method: 'POST', headers });
+        await fetch(`api/progress/${moduleId}/complete`, { method: 'POST', headers });
         completeBtn.textContent = 'Completed!';
         completeBtn.disabled = true;
         completeBtn.classList.add('btn-completed');
