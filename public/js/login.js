@@ -33,6 +33,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       body: JSON.stringify({ name })
     });
     const data = await res.json();
+    if (data.name.toLowerCase() !== 'mike duff') {
+      localStorage.removeItem('bootcamp_token');
+      localStorage.removeItem('bootcamp_name');
+      window.location.href = 'coming-soon.html';
+      return;
+    }
     localStorage.setItem('bootcamp_token', data.sessionToken);
     localStorage.setItem('bootcamp_name', data.name);
     window.location.href = 'dashboard.html';
