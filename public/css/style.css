@@ -6,53 +6,64 @@
 }
 
 :root {
-  --primary: #e07a3a;
-  --primary-dark: #c4632a;
-  --bg: #faf8f5;
-  --bg-card: #ffffff;
-  --text: #1a1a2e;
-  --text-light: #6b7280;
-  --border: #e5e7eb;
-  --success: #10b981;
-  --success-bg: #ecfdf5;
-  --locked: #9ca3af;
+  --primary: #6c5ce7;
+  --primary-dark: #5a4bd1;
+  --accent: #00cec9;
+  --accent-glow: rgba(0, 206, 201, 0.15);
+  --bg: #0a0a1a;
+  --bg-card: #12122a;
+  --bg-card-hover: #1a1a3e;
+  --text: #e2e8f0;
+  --text-light: #94a3b8;
+  --border: #2d2d5e;
+  --success: #00e676;
+  --success-bg: rgba(0, 230, 118, 0.1);
+  --locked: #4a4a6a;
   --radius: 12px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+  --shadow: 0 2px 12px rgba(108, 92, 231, 0.15);
+  --shadow-hover: 0 8px 30px rgba(108, 92, 231, 0.25);
+  --gradient: linear-gradient(135deg, #6c5ce7, #00cec9);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 206, 201, 0.06) 0%, transparent 50%);
   color: var(--text);
   line-height: 1.6;
   min-height: 100vh;
 }
 
-a { color: var(--primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-shadow: 0 0 8px var(--accent-glow); }
 
 code {
-  background: #f3f4f6;
+  background: rgba(108, 92, 231, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.9em;
+  color: var(--accent);
+  border: 1px solid rgba(108, 92, 231, 0.2);
 }
 
 pre {
-  background: #1a1a2e;
-  color: #e2e8f0;
+  background: #080818;
+  color: var(--accent);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
   margin: 12px 0;
+  border: 1px solid var(--border);
 }
 
 pre code {
   background: none;
   padding: 0;
   color: inherit;
+  border: none;
 }
 
 /* === Buttons === */
@@ -70,12 +81,13 @@ pre code {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--gradient);
   color: white;
+  box-shadow: 0 2px 15px rgba(108, 92, 231, 0.3);
 }
 
-.btn-primary:hover { background: var(--primary-dark); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary:hover { box-shadow: 0 4px 25px rgba(108, 92, 231, 0.5); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .btn-outline {
   background: transparent;
@@ -83,7 +95,7 @@ pre code {
   color: var(--text-light);
 }
 
-.btn-outline:hover { border-color: var(--text); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
 .btn-full { width: 100%; }
 .btn-small { padding: 6px 12px; font-size: 0.85rem; }
@@ -96,7 +108,10 @@ pre code {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, #0a0a1a 0%, #12122a 50%, #0a1628 100%);
+  background-image:
+    radial-gradient(ellipse at 30% 60%, rgba(108, 92, 231, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(0, 206, 201, 0.08) 0%, transparent 50%);
 }
 
 .login-container {
@@ -106,10 +121,11 @@ pre code {
 }
 
 .login-card {
-  background: white;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 48px 40px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(108, 92, 231, 0.1);
 }
 
 .login-logo {
@@ -132,7 +148,7 @@ pre code {
 
 .subtitle {
   font-size: 1.1rem;
-  color: var(--primary);
+  color: var(--accent);
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -159,12 +175,15 @@ pre code {
   border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
+  background: #0a0a1a;
+  color: var(--text);
 }
 
 .input-group input:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
 }
 
 .login-footer {
@@ -180,7 +199,7 @@ pre code {
   align-items: center;
   justify-content: space-between;
   padding: 16px 32px;
-  background: white;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
@@ -206,7 +225,7 @@ pre code {
 }
 
 .progress-badge {
-  background: var(--primary);
+  background: var(--gradient);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
@@ -222,7 +241,7 @@ pre code {
 }
 
 .progress-bar-container {
-  background: var(--border);
+  background: #1a1a3e;
   border-radius: 10px;
   height: 8px;
   margin-bottom: 32px;
@@ -231,7 +250,7 @@ pre code {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), var(--success));
+  background: var(--gradient);
   border-radius: 10px;
   transition: width 0.5s ease;
 }
@@ -244,20 +263,23 @@ pre code {
 
 .module-card {
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
-  transition: all 0.2s;
+  transition: all 0.3s;
   box-shadow: var(--shadow);
 }
 
 .module-card.available {
   border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(108, 92, 231, 0.1);
 }
 
 .module-card.available:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
 }
 
 .module-card.completed {
@@ -286,10 +308,11 @@ pre code {
 
 .module-duration {
   font-size: 0.8rem;
-  background: #f3f4f6;
+  background: rgba(0, 206, 201, 0.1);
   padding: 2px 10px;
   border-radius: 12px;
-  color: var(--text-light);
+  color: var(--accent);
+  border: 1px solid rgba(0, 206, 201, 0.2);
 }
 
 .module-title {
@@ -347,12 +370,13 @@ pre code {
 
 .module-duration-badge,
 .module-number-badge {
-  background: #f3f4f6;
+  background: rgba(108, 92, 231, 0.1);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-light);
+  color: var(--primary);
+  border: 1px solid rgba(108, 92, 231, 0.2);
 }
 
 .module-content h2 {
@@ -386,15 +410,16 @@ pre code {
 }
 
 .exercise {
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: rgba(0, 206, 201, 0.05);
+  border: 1px solid rgba(0, 206, 201, 0.25);
   border-radius: var(--radius);
   padding: 20px 24px;
   margin: 20px 0;
+  border-left: 3px solid var(--accent);
 }
 
 .exercise h4 {
-  color: #92400e;
+  color: var(--accent);
 }
 
 .exercise ol, .exercise ul {
@@ -402,40 +427,41 @@ pre code {
 }
 
 .check-understanding {
-  background: #ede9fe;
-  border: 1px solid #a78bfa;
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.25);
   border-radius: var(--radius);
   padding: 20px 24px;
   margin: 20px 0;
+  border-left: 3px solid var(--primary);
 }
 
 .check-understanding h4 {
-  color: #5b21b6;
+  color: var(--primary);
 }
 
 /* === Assessment Section === */
 .assessment-section {
-  background: #ede9fe;
-  border: 2px solid #a78bfa;
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.3);
   border-radius: var(--radius);
   padding: 24px;
   margin: 24px 0;
 }
 
 .assessment-section h4 {
-  color: #5b21b6;
+  color: var(--primary);
   font-size: 1.15rem;
   margin-bottom: 8px;
 }
 
 .assessment-intro {
   font-size: 0.9rem;
-  color: #6b21a8;
+  color: var(--text-light);
   margin-bottom: 20px;
 }
 
 .assessment-question {
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
@@ -463,11 +489,17 @@ pre code {
 }
 
 .assessment-answer:focus {
-  border-color: #a78bfa;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(108, 92, 231, 0.15);
 }
 
 .assessment-answer:disabled {
-  background: #f9fafb;
+  background: #0a0a1a;
+  color: var(--text);
+}
+
+.assessment-answer {
+  background: #0a0a1a;
   color: var(--text);
 }
 
@@ -518,7 +550,7 @@ pre code {
 
 .grading-spinner {
   font-size: 0.85rem;
-  color: #a78bfa;
+  color: var(--primary);
   font-style: italic;
 }
 
@@ -533,6 +565,7 @@ pre code {
   display: flex;
   justify-content: center;
   z-index: 50;
+  background: var(--bg-card);
 }
 
 /* === Chatbot Panel === */
@@ -540,7 +573,7 @@ pre code {
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border);
-  background: white;
+  background: var(--bg-card);
   height: calc(100vh - 65px);
   position: sticky;
   top: 65px;
@@ -594,15 +627,16 @@ pre code {
 }
 
 .chat-message.user .chat-bubble {
-  background: var(--primary);
+  background: var(--gradient);
   color: white;
   border-bottom-right-radius: 4px;
 }
 
 .chat-message.assistant .chat-bubble {
-  background: #f3f4f6;
+  background: #1a1a3e;
   color: var(--text);
   border-bottom-left-radius: 4px;
+  border: 1px solid var(--border);
 }
 
 .chat-bubble.streaming::after {
@@ -640,10 +674,13 @@ pre code {
   border-radius: 8px;
   font-size: 0.9rem;
   outline: none;
+  background: #0a0a1a;
+  color: var(--text);
 }
 
 .chat-input-form input:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(108, 92, 231, 0.15);
 }
 
 .chat-input-form .btn {
@@ -656,7 +693,7 @@ pre code {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: var(--primary);
+  background: var(--gradient);
   color: white;
   border: none;
   border-radius: 50px;
@@ -664,7 +701,7 @@ pre code {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(224, 122, 58, 0.4);
+  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
   z-index: 200;
 }
 
