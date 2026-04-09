@@ -48,6 +48,10 @@ app.post('/api/login', (req, res) => {
   const { name } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
 
+  if (name.trim() !== 'Mike Duff') {
+    return res.status(403).json({ error: 'Thank you for your interest. The bootcamp is officially over.' });
+  }
+
   const sessionToken = uuidv4();
   const result = db.prepare('INSERT INTO participants (name, session_token) VALUES (?, ?)').run(name.trim(), sessionToken);
 

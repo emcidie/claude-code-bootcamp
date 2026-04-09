@@ -33,6 +33,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       body: JSON.stringify({ name })
     });
     const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Something went wrong. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Start Bootcamp';
+      return;
+    }
     localStorage.setItem('bootcamp_token', data.sessionToken);
     localStorage.setItem('bootcamp_name', data.name);
     window.location.href = 'dashboard.html';
