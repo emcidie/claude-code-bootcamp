@@ -193,6 +193,14 @@ pre code {
   color: var(--text-light);
 }
 
+.bootcamp-over-message {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--text-light);
+  padding: 24px 0;
+  line-height: 1.6;
+}
+
 /* === Header === */
 .header {
   display: flex;

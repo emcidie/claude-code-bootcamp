@@ -34,9 +34,13 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || 'Something went wrong. Please try again.');
-      btn.disabled = false;
-      btn.textContent = 'Start Bootcamp';
+      const card = document.querySelector('.login-card');
+      card.innerHTML = `
+        <div class="login-header">
+          <img src="images/logo.svg" alt="Japan CMT Claude Code Bootcamp" class="login-logo">
+        </div>
+        <p class="bootcamp-over-message">Thank you for the interest. The bootcamp has concluded.</p>
+      `;
       return;
     }
     localStorage.setItem('bootcamp_token', data.sessionToken);
