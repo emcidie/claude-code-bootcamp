@@ -37,7 +37,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       const card = document.querySelector('.login-card');
       card.innerHTML = `
         <div class="login-header">
-          <img src="images/logo.svg" alt="Japan CMT Claude Code Bootcamp" class="login-logo">
+          <img src="images/logo.svg" alt="EMCIDIE Claude Code Bootcamp" class="login-logo">
         </div>
         <p class="bootcamp-over-message">Thank you for the interest. The bootcamp has concluded.</p>
       `;

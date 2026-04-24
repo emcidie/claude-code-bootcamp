@@ -24,7 +24,7 @@ async function loadModule() {
 
     // Set header
     document.getElementById('module-title-header').textContent = `Module ${mod.id}: ${mod.title}`;
-    document.title = `${mod.title} — Claude Code Bootcamp`;
+    document.title = `${mod.title} — EMCIDIE Claude Code Bootcamp`;
 
     // Build assessment HTML
     const questions = mod.questions || [];

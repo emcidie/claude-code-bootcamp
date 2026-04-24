@@ -17,8 +17,8 @@
   <!-- Background rounded rect -->
   <rect width="480" height="160" rx="16" fill="url(#bg-grad)"/>
 
-  <!-- Japanese-inspired decorative elements -->
-  <!-- Rising sun circle -->
+  <!-- Decorative elements -->
+  <!-- Accent circle -->
   <circle cx="56" cy="65" r="28" fill="url(#jp-red)" opacity="0.9"/>
   <!-- Sun rays -->
   <g opacity="0.15" stroke="#dc2626" stroke-width="2" fill="none">
@@ -38,7 +38,7 @@
   <line x1="55" y1="67" x2="63" y2="67" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
 
   <!-- Main title -->
-  <text x="100" y="52" font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="3" fill="#e07a3a">JAPAN CMT</text>
+  <text x="100" y="52" font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="3" fill="#e07a3a">EMCIDIE</text>
 
   <text x="100" y="82" font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="800" fill="white">Claude Code</text>
 

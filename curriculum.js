@@ -21,7 +21,7 @@ Key concepts to reinforce:
 - Claude Code works WITH your files directly, unlike a regular chatbot
 - You don't need to know how to code to use Claude Code`,
     content: `
-<h2>Welcome to the Claude Code Bootcamp!</h2>
+<h2>Welcome to the EMCIDIE Claude Code Bootcamp!</h2>
 <p>Before we start building things, let's understand what AI actually is and what Claude Code can do for you.</p>
 
 <h3>What is Artificial Intelligence?</h3>
