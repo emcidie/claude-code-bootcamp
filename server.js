@@ -116,7 +116,7 @@ app.delete('/api/admin/users/:id', adminAuth, (req, res) => {
     db.prepare('DELETE FROM progress WHERE participant_id = ?').run(id);
     db.prepare('DELETE FROM assessments WHERE participant_id = ?').run(id);
     db.prepare('DELETE FROM chat_messages WHERE participant_id = ?').run(id);
-    return db.prepare('DELETE FROM participants WHERE id = ? AND username IS NOT NULL').run(id);
+    return db.prepare('DELETE FROM participants WHERE id = ?').run(id);
   });
   const result = tx();
   if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
@@ -370,7 +370,10 @@ app.get('/api/admin/dashboard', adminAuth, (req, res) => {
     const allScores = pAssessments.map(a => a.score);
     const overallAvg = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : null;
     return {
+      id: p.id,
       name: p.name,
+      username: p.username,
+      isAdmin: !!p.is_admin,
       created_at: p.created_at,
       last_active: p.last_active,
       modules: moduleStatus,

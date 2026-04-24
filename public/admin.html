@@ -55,6 +55,7 @@
           <th>Scores (1-8)</th>
           <th>Avg Score</th>
           <th>Completed</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="participants-table"></tbody>
@@ -147,6 +148,9 @@
           }).join('');
 
           const row = document.createElement('tr');
+          const actionCell = p.isAdmin
+            ? '<span style="color: var(--text-light); font-size: 0.8rem;">admin</span>'
+            : `<button class="btn-danger" data-delete-participant="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Delete</button>`;
           row.innerHTML = `
             <td><strong>${p.name}</strong></td>
             <td>${timeAgo(p.created_at)}</td>
@@ -155,6 +159,7 @@
             <td><div class="progress-dots">${scores}</div></td>
             <td>${p.overallAvg ? p.overallAvg + '/10' : '-'}</td>
             <td>${p.completedCount}/8</td>
+            <td>${actionCell}</td>
           `;
           tbody.appendChild(row);
         });
@@ -176,6 +181,21 @@
     document.getElementById('refresh-btn').addEventListener('click', loadAdmin);
     loadAdmin();
     setInterval(loadAdmin, 15000);
+
+    document.getElementById('participants-table').addEventListener('click', async (e) => {
+      const id = e.target.dataset.deleteParticipant;
+      if (!id) return;
+      if (!confirm(`Delete participant "${e.target.dataset.name}" and all their progress? This cannot be undone.`)) return;
+      try {
+        const res = await adminFetch(`api/admin/users/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+        showMessage('Participant deleted', 'success');
+        loadAdmin();
+        loadUsers();
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    });
 
     // --- User management ---
     function showMessage(text, type) {
