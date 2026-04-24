@@ -1,6 +1,11 @@
 const token = localStorage.getItem('bootcamp_token');
 if (!token) window.location.href = './';
 
+fetch('api/me', { headers: { 'Authorization': `Bearer ${token}` } })
+  .then(r => r.ok ? r.json() : null)
+  .then(me => { if (me && me.isAdmin) document.getElementById('admin-link').style.display = 'inline-flex'; })
+  .catch(() => {});
+
 const params = new URLSearchParams(window.location.search);
 const moduleId = parseInt(params.get('id'));
 if (!moduleId) window.location.href = 'dashboard.html';

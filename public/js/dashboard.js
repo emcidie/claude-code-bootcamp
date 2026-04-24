@@ -4,6 +4,11 @@ const name = localStorage.getItem('bootcamp_name');
 if (!token) window.location.href = './';
 
 document.getElementById('participant-name').textContent = name || 'Participant';
+
+fetch('api/me', { headers: { 'Authorization': `Bearer ${token}` } })
+  .then(r => r.ok ? r.json() : null)
+  .then(me => { if (me && me.isAdmin) document.getElementById('admin-link').style.display = 'inline-flex'; })
+  .catch(() => {});
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.clear();
   window.location.href = './';
