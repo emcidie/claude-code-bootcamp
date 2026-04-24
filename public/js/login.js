@@ -7,7 +7,8 @@
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      window.location.href = 'dashboard.html';
+      const me = await res.json();
+      window.location.href = me.isAdmin ? 'admin.html' : 'dashboard.html';
     } else {
       localStorage.removeItem('bootcamp_token');
     }
@@ -44,7 +45,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
     localStorage.setItem('bootcamp_token', data.sessionToken);
     localStorage.setItem('bootcamp_name', data.name);
-    window.location.href = 'dashboard.html';
+    window.location.href = data.isAdmin ? 'admin.html' : 'dashboard.html';
   } catch (err) {
     errorEl.textContent = 'Something went wrong. Please try again.';
     errorEl.style.display = 'block';

@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS participants (
     name TEXT NOT NULL,
     username TEXT,
     password_hash TEXT,
+    is_admin INTEGER NOT NULL DEFAULT 0,
     session_token TEXT UNIQUE NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_active DATETIME DEFAULT CURRENT_TIMESTAMP

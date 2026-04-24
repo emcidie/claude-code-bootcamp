@@ -83,9 +83,29 @@
   </main>
 
   <script>
+    const token = localStorage.getItem('bootcamp_token');
+    if (!token) { window.location.href = 'index.html'; }
+
+    function authHeaders(extra) {
+      return { 'Authorization': `Bearer ${token}`, ...(extra || {}) };
+    }
+
+    (async function gate() {
+      try {
+        const res = await fetch('api/me', { headers: authHeaders() });
+        if (!res.ok) throw new Error('unauthorized');
+        const me = await res.json();
+        if (!me.isAdmin) { window.location.href = 'dashboard.html'; return; }
+      } catch (e) {
+        localStorage.removeItem('bootcamp_token');
+        window.location.href = 'index.html';
+      }
+    })();
+
     async function loadAdmin() {
       try {
-        const res = await fetch('api/admin/dashboard');
+        const res = await fetch('api/admin/dashboard', { headers: authHeaders() });
+        if (res.status === 401) { window.location.href = 'index.html'; return; }
         const data = await res.json();
 
         // Stats
@@ -157,15 +177,6 @@
     setInterval(loadAdmin, 15000);
 
     // --- User management ---
-    function getAdminSecret() {
-      let s = localStorage.getItem('admin_secret');
-      if (!s) {
-        s = prompt('Enter admin secret to manage users:');
-        if (s) localStorage.setItem('admin_secret', s);
-      }
-      return s;
-    }
-
     function showMessage(text, type) {
       const el = document.getElementById('admin-message');
       el.className = 'admin-message ' + type;
@@ -174,19 +185,14 @@
     }
 
     async function adminFetch(url, opts = {}) {
-      const secret = getAdminSecret();
-      if (!secret) throw new Error('No admin secret');
       const res = await fetch(url, {
         ...opts,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-secret': secret,
-          ...(opts.headers || {})
-        }
+        headers: authHeaders({ 'Content-Type': 'application/json', ...(opts.headers || {}) })
       });
       if (res.status === 401) {
-        localStorage.removeItem('admin_secret');
-        throw new Error('Invalid admin secret');
+        localStorage.removeItem('bootcamp_token');
+        window.location.href = 'index.html';
+        throw new Error('Session expired');
       }
       return res;
     }

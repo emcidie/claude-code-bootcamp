@@ -60,16 +60,18 @@ app.post('/api/login', (req, res) => {
   db.prepare('UPDATE participants SET session_token = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?')
     .run(sessionToken, user.id);
 
-  res.json({ id: user.id, name: user.name, sessionToken });
+  res.json({ id: user.id, name: user.name, sessionToken, isAdmin: !!user.is_admin });
 });
 
 // --- Admin user management ---
 
 function adminAuth(req, res, next) {
-  const secret = req.headers['x-admin-secret'];
-  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const participant = db.prepare('SELECT * FROM participants WHERE session_token = ?').get(token);
+  if (!participant || !participant.is_admin) return res.status(401).json({ error: 'Unauthorized' });
+  db.prepare('UPDATE participants SET last_active = CURRENT_TIMESTAMP WHERE id = ?').run(participant.id);
+  req.participant = participant;
   next();
 }
 
@@ -108,6 +110,8 @@ app.put('/api/admin/users/:id/password', adminAuth, (req, res) => {
 
 app.delete('/api/admin/users/:id', adminAuth, (req, res) => {
   const id = parseInt(req.params.id);
+  const target = db.prepare('SELECT is_admin FROM participants WHERE id = ?').get(id);
+  if (target && target.is_admin) return res.status(403).json({ error: 'Cannot delete admin accounts' });
   const tx = db.transaction(() => {
     db.prepare('DELETE FROM progress WHERE participant_id = ?').run(id);
     db.prepare('DELETE FROM assessments WHERE participant_id = ?').run(id);
@@ -120,7 +124,11 @@ app.delete('/api/admin/users/:id', adminAuth, (req, res) => {
 });
 
 app.get('/api/me', auth, (req, res) => {
-  res.json({ id: req.participant.id, name: req.participant.name });
+  res.json({
+    id: req.participant.id,
+    name: req.participant.name,
+    isAdmin: !!req.participant.is_admin
+  });
 });
 
 // --- Curriculum routes ---
@@ -337,7 +345,7 @@ ${mod.tutorContext}`;
 
 // --- Admin dashboard ---
 
-app.get('/api/admin/dashboard', (req, res) => {
+app.get('/api/admin/dashboard', adminAuth, (req, res) => {
   const participants = db.prepare('SELECT * FROM participants ORDER BY last_active DESC').all();
   const allProgress = db.prepare('SELECT * FROM progress').all();
   const allAssessments = db.prepare('SELECT * FROM assessments').all();

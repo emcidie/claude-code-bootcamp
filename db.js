@@ -13,6 +13,7 @@ db.exec(schema);
 const cols = db.prepare("PRAGMA table_info(participants)").all().map(c => c.name);
 if (!cols.includes('username')) db.exec('ALTER TABLE participants ADD COLUMN username TEXT');
 if (!cols.includes('password_hash')) db.exec('ALTER TABLE participants ADD COLUMN password_hash TEXT');
+if (!cols.includes('is_admin')) db.exec('ALTER TABLE participants ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_username ON participants(username) WHERE username IS NOT NULL');
 
 module.exports = db;
