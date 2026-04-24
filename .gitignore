@@ -1,3 +1,6 @@
 node_modules/
 .env
 bootcamp.db
+bootcamp.db-shm
+bootcamp.db-wal
+.DS_Store

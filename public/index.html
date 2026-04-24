@@ -14,12 +14,17 @@
       </div>
       <form id="login-form">
         <div class="input-group">
-          <label for="name">What's your name?</label>
-          <input type="text" id="name" placeholder="Enter your name" autocomplete="off" required>
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-full">Start Bootcamp</button>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+        </div>
+        <p id="login-error" class="login-error" style="display:none;"></p>
+        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
       </form>
-      <p class="login-footer">Ready to learn? Just enter your name to begin.</p>
+      <p class="login-footer">Sign in with the credentials provided by your administrator.</p>
     </div>
   </div>
   <script src="js/login.js"></script>

@@ -21,6 +21,15 @@
     .dot.in_progress { background: var(--primary); }
     .dot.not_started { background: #2d2d5e; color: #6b7280; }
     .refresh-note { text-align: center; color: var(--text-light); font-size: 0.8rem; margin-top: 16px; }
+    .section-title { margin: 40px 0 16px; font-size: 1.1rem; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; }
+    .user-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .user-form input { padding: 10px 12px; background: #1a1a3e; border: 1px solid var(--border); border-radius: 6px; color: #e2e8f0; font-size: 0.9rem; }
+    .btn-small-inline { padding: 8px 14px; font-size: 0.85rem; }
+    .btn-danger { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .btn-warn { background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-right: 6px; }
+    .admin-message { padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
+    .admin-message.error { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .admin-message.success { background: rgba(34, 197, 94, 0.12); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
   </style>
 </head>
 <body>
@@ -50,6 +59,27 @@
       <tbody id="participants-table"></tbody>
     </table>
     <p class="refresh-note">Auto-refreshes every 15 seconds</p>
+
+    <h2 class="section-title">User Management</h2>
+    <div id="admin-message"></div>
+    <form id="user-form" class="user-form">
+      <input type="text" id="new-name" placeholder="Display name" required>
+      <input type="text" id="new-username" placeholder="Username" autocomplete="off" required>
+      <input type="password" id="new-password" placeholder="Password" autocomplete="new-password" required>
+      <button type="submit" class="btn btn-primary btn-small-inline">Add User</button>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Created</th>
+          <th>Last Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-table"></tbody>
+    </table>
   </main>
 
   <script>
@@ -125,6 +155,121 @@
     document.getElementById('refresh-btn').addEventListener('click', loadAdmin);
     loadAdmin();
     setInterval(loadAdmin, 15000);
+
+    // --- User management ---
+    function getAdminSecret() {
+      let s = localStorage.getItem('admin_secret');
+      if (!s) {
+        s = prompt('Enter admin secret to manage users:');
+        if (s) localStorage.setItem('admin_secret', s);
+      }
+      return s;
+    }
+
+    function showMessage(text, type) {
+      const el = document.getElementById('admin-message');
+      el.className = 'admin-message ' + type;
+      el.textContent = text;
+      setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+    }
+
+    async function adminFetch(url, opts = {}) {
+      const secret = getAdminSecret();
+      if (!secret) throw new Error('No admin secret');
+      const res = await fetch(url, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret,
+          ...(opts.headers || {})
+        }
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('admin_secret');
+        throw new Error('Invalid admin secret');
+      }
+      return res;
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await adminFetch('api/admin/users');
+        if (!res.ok) throw new Error('Failed to load users');
+        const users = await res.json();
+        const tbody = document.getElementById('users-table');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${u.name}</td>
+            <td><code>${u.username}</code></td>
+            <td>${timeAgo(u.created_at)}</td>
+            <td>${timeAgo(u.last_active)}</td>
+            <td>
+              <button class="btn-warn" data-reset="${u.id}">Reset Password</button>
+              <button class="btn-danger" data-delete="${u.id}" data-name="${u.name}">Delete</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value;
+      try {
+        const res = await adminFetch('api/admin/users', {
+          method: 'POST',
+          body: JSON.stringify({ name, username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create user');
+        showMessage(`Created user "${username}"`, 'success');
+        e.target.reset();
+        loadUsers();
+        loadAdmin();
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    });
+
+    document.getElementById('users-table').addEventListener('click', async (e) => {
+      const resetId = e.target.dataset.reset;
+      const deleteId = e.target.dataset.delete;
+      if (resetId) {
+        const password = prompt('New password:');
+        if (!password) return;
+        try {
+          const res = await adminFetch(`api/admin/users/${resetId}/password`, {
+            method: 'PUT',
+            body: JSON.stringify({ password })
+          });
+          if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+          showMessage('Password reset', 'success');
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      }
+      if (deleteId) {
+        if (!confirm(`Delete user "${e.target.dataset.name}" and all their progress?`)) return;
+        try {
+          const res = await adminFetch(`api/admin/users/${deleteId}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+          showMessage('User deleted', 'success');
+          loadUsers();
+          loadAdmin();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      }
+    });
+
+    loadUsers();
   </script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-// Check for existing session
 (async function checkSession() {
   const token = localStorage.getItem('bootcamp_token');
   if (!token) return;
@@ -19,36 +18,37 @@
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  if (!name) return;
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('login-error');
+  errorEl.style.display = 'none';
+  if (!username || !password) return;
 
   const btn = e.target.querySelector('button');
   btn.disabled = true;
-  btn.textContent = 'Starting...';
+  btn.textContent = 'Signing in...';
 
   try {
     const res = await fetch(`api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
+      body: JSON.stringify({ username, password })
     });
     const data = await res.json();
     if (!res.ok) {
-      const card = document.querySelector('.login-card');
-      card.innerHTML = `
-        <div class="login-header">
-          <img src="images/logo.svg" alt="EMCIDIE Claude Code Bootcamp" class="login-logo">
-        </div>
-        <p class="bootcamp-over-message">Thank you for the interest. The bootcamp has concluded.</p>
-      `;
+      errorEl.textContent = data.error || 'Sign in failed.';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
       return;
     }
     localStorage.setItem('bootcamp_token', data.sessionToken);
     localStorage.setItem('bootcamp_name', data.name);
     window.location.href = 'dashboard.html';
   } catch (err) {
-    alert('Something went wrong. Please try again.');
+    errorEl.textContent = 'Something went wrong. Please try again.';
+    errorEl.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = 'Start Bootcamp';
+    btn.textContent = 'Sign In';
   }
 });

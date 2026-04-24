@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 const Anthropic = require('@anthropic-ai/sdk').default;
 const path = require('path');
 const db = require('./db');
@@ -45,17 +46,77 @@ function auth(req, res, next) {
 // --- Auth routes ---
 
 app.post('/api/login', (req, res) => {
-  const { name } = req.body;
-  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
 
-  if (name.trim() !== 'Mike Duff') {
-    return res.status(403).json({ error: 'Thank you for your interest. The bootcamp is officially over.' });
+  const user = db.prepare('SELECT * FROM participants WHERE username = ?').get(username.trim());
+  if (!user || !user.password_hash) return res.status(401).json({ error: 'Invalid username or password' });
+
+  if (!bcrypt.compareSync(password, user.password_hash)) {
+    return res.status(401).json({ error: 'Invalid username or password' });
   }
 
   const sessionToken = uuidv4();
-  const result = db.prepare('INSERT INTO participants (name, session_token) VALUES (?, ?)').run(name.trim(), sessionToken);
+  db.prepare('UPDATE participants SET session_token = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(sessionToken, user.id);
 
-  res.json({ id: result.lastInsertRowid, name: name.trim(), sessionToken });
+  res.json({ id: user.id, name: user.name, sessionToken });
+});
+
+// --- Admin user management ---
+
+function adminAuth(req, res, next) {
+  const secret = req.headers['x-admin-secret'];
+  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/api/admin/users', adminAuth, (req, res) => {
+  const users = db.prepare(
+    'SELECT id, name, username, created_at, last_active FROM participants WHERE username IS NOT NULL ORDER BY created_at DESC'
+  ).all();
+  res.json(users);
+});
+
+app.post('/api/admin/users', adminAuth, (req, res) => {
+  const { username, password, name } = req.body;
+  if (!username || !password || !name) {
+    return res.status(400).json({ error: 'name, username, and password are required' });
+  }
+  const existing = db.prepare('SELECT id FROM participants WHERE username = ?').get(username.trim());
+  if (existing) return res.status(409).json({ error: 'Username already exists' });
+
+  const hash = bcrypt.hashSync(password, 10);
+  const sessionToken = uuidv4();
+  const result = db.prepare(
+    'INSERT INTO participants (name, username, password_hash, session_token) VALUES (?, ?, ?, ?)'
+  ).run(name.trim(), username.trim(), hash, sessionToken);
+  res.json({ id: result.lastInsertRowid, name: name.trim(), username: username.trim() });
+});
+
+app.put('/api/admin/users/:id/password', adminAuth, (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'password is required' });
+  const hash = bcrypt.hashSync(password, 10);
+  const result = db.prepare('UPDATE participants SET password_hash = ? WHERE id = ? AND username IS NOT NULL')
+    .run(hash, parseInt(req.params.id));
+  if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/users/:id', adminAuth, (req, res) => {
+  const id = parseInt(req.params.id);
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM progress WHERE participant_id = ?').run(id);
+    db.prepare('DELETE FROM assessments WHERE participant_id = ?').run(id);
+    db.prepare('DELETE FROM chat_messages WHERE participant_id = ?').run(id);
+    return db.prepare('DELETE FROM participants WHERE id = ? AND username IS NOT NULL').run(id);
+  });
+  const result = tx();
+  if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
+  res.json({ success: true });
 });
 
 app.get('/api/me', auth, (req, res) => {

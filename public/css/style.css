@@ -193,6 +193,17 @@ pre code {
   color: var(--text-light);
 }
 
+.login-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
 .bootcamp-over-message {
   text-align: center;
   font-size: 1.1rem;
