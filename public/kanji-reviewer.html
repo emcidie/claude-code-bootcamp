@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>More Kanji 漢字 - Reviewer</title>
+<style>
+  :root {
+    --card-bg: #fdfaf4;
+    --ink: #2b2340;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(180deg, #c9a8f0 0%, #a985e0 40%, #8f6fd6 100%);
+    min-height: 100vh;
+    color: var(--ink);
+    padding-bottom: 60px;
+  }
+  header {
+    text-align: center;
+    padding: 28px 16px 20px;
+  }
+  header h1 {
+    display: inline-block;
+    margin: 0;
+    font-size: 2rem;
+    background: #fff;
+    padding: 10px 24px;
+    border-radius: 20px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+    color: #3d2b7a;
+  }
+  header p {
+    margin: 10px 0 0;
+    color: #f4edff;
+    font-size: 0.95rem;
+  }
+  .mode-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 18px auto 0;
+  }
+  .mode-toggle button {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255,255,255,0.35);
+    color: #fff;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mode-toggle button.active {
+    background: #fff;
+    color: #5b3fa3;
+  }
+
+  /* ---------- Study grid ---------- */
+  #grid-view { max-width: 1100px; margin: 0 auto; padding: 10px 16px; }
+  .category { margin-bottom: 26px; }
+  .category h2 {
+    color: #fff;
+    font-size: 1.05rem;
+    margin: 0 0 10px 4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 14px 8px 10px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .card .emoji { font-size: 2.1rem; line-height: 1; margin-bottom: 6px; }
+  .card .kanji { font-size: 2rem; font-weight: 700; color: #2b2340; }
+  .card .meaning { font-size: 0.9rem; margin-top: 4px; color: #4a3d70; }
+  .card .romaji { font-size: 0.8rem; color: #8b7fb0; }
+
+  /* ---------- Quiz view ---------- */
+  #quiz-view { display: none; flex-direction: column; align-items: center; padding: 20px 16px; }
+  .progress { color: #f4edff; margin-bottom: 14px; font-size: 0.95rem; }
+  .flip-card {
+    width: 260px;
+    height: 260px;
+    perspective: 1000px;
+    cursor: pointer;
+  }
+  .flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s;
+    transform-style: preserve-3d;
+  }
+  .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 24px;
+    background: var(--card-bg);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .flip-front .kanji-big { font-size: 5rem; font-weight: 700; }
+  .flip-back { transform: rotateY(180deg); }
+  .flip-back .emoji { font-size: 3.2rem; margin-bottom: 8px; }
+  .flip-back .meaning { font-size: 1.3rem; font-weight: 600; }
+  .flip-back .romaji { font-size: 1rem; color: #8b7fb0; margin-top: 4px; }
+  .hint { margin-top: 10px; color: #f4edff; font-size: 0.85rem; }
+
+  .quiz-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .quiz-controls button {
+    border: none;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-prev, .btn-next { background: rgba(255,255,255,0.35); color: #fff; }
+  .btn-shuffle { background: #fff2c6; color: #7a5c00; }
+  .btn-known { background: #b8f0c2; color: #185e2b; }
+  .btn-again { background: #ffc9c9; color: #7a1d1d; }
+
+  .known-badge {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>More Kanji 漢字</h1>
+  <p>A second set of everyday kanji &mdash; numbers, colors, directions &amp; more</p>
+  <div class="mode-toggle">
+    <button id="btn-grid" class="active">Study Grid</button>
+    <button id="btn-quiz">Flashcard Quiz</button>
+  </div>
+</header>
+
+<div id="grid-view"></div>
+
+<div id="quiz-view">
+  <div class="progress" id="quiz-progress"></div>
+  <div class="flip-card" id="flip-card">
+    <div class="flip-inner">
+      <div class="flip-face flip-front">
+        <div class="kanji-big" id="quiz-kanji"></div>
+      </div>
+      <div class="flip-face flip-back">
+        <div class="emoji" id="quiz-emoji-back"></div>
+        <div class="meaning" id="quiz-meaning"></div>
+        <div class="romaji" id="quiz-romaji"></div>
+      </div>
+    </div>
+    <div class="known-badge" id="quiz-badge"></div>
+  </div>
+  <div class="hint">Tap the card to flip it</div>
+  <div class="quiz-controls">
+    <button class="btn-prev" id="btn-prev">◀ Prev</button>
+    <button class="btn-again" id="btn-again">Still learning</button>
+    <button class="btn-known" id="btn-known">Got it ✓</button>
+    <button class="btn-next" id="btn-next">Next ▶</button>
+    <button class="btn-shuffle" id="btn-shuffle">🔀 Shuffle</button>
+  </div>
+</div>
+
+<script>
+  const CATEGORIES = [
+    { name: "Numbers", items: [
+      { kanji: "一", meaning: "one",   romaji: "ichi", emoji: "1️⃣" },
+      { kanji: "二", meaning: "two",   romaji: "ni",   emoji: "2️⃣" },
+      { kanji: "三", meaning: "three", romaji: "san",  emoji: "3️⃣" },
+      { kanji: "四", meaning: "four",  romaji: "yon",  emoji: "4️⃣" },
+      { kanji: "五", meaning: "five",  romaji: "go",   emoji: "5️⃣" },
+      { kanji: "六", meaning: "six",   romaji: "roku", emoji: "6️⃣" },
+      { kanji: "七", meaning: "seven", romaji: "nana", emoji: "7️⃣" },
+      { kanji: "八", meaning: "eight", romaji: "hachi",emoji: "8️⃣" },
+      { kanji: "九", meaning: "nine",  romaji: "kyuu", emoji: "9️⃣" },
+      { kanji: "十", meaning: "ten",   romaji: "juu",  emoji: "🔟" },
+    ]},
+    { name: "Time", items: [
+      { kanji: "今", meaning: "now",    romaji: "ima",  emoji: "⏰" },
+      { kanji: "時", meaning: "hour",   romaji: "toki", emoji: "🕐" },
+      { kanji: "分", meaning: "minute", romaji: "fun",  emoji: "⏱️" },
+      { kanji: "年", meaning: "year",   romaji: "nen",  emoji: "📅" },
+    ]},
+    { name: "Colors", items: [
+      { kanji: "赤", meaning: "red",   romaji: "aka",   emoji: "🔴" },
+      { kanji: "青", meaning: "blue",  romaji: "ao",    emoji: "🔵" },
+      { kanji: "白", meaning: "white", romaji: "shiro", emoji: "⚪" },
+      { kanji: "黒", meaning: "black", romaji: "kuro",  emoji: "⚫" },
+    ]},
+    { name: "Body", items: [
+      { kanji: "目", meaning: "eye",  romaji: "me",   emoji: "👁️" },
+      { kanji: "耳", meaning: "ear",  romaji: "mimi", emoji: "👂" },
+      { kanji: "足", meaning: "foot", romaji: "ashi", emoji: "🦶" },
+    ]},
+    { name: "Directions", items: [
+      { kanji: "右", meaning: "right", romaji: "migi",    emoji: "👉" },
+      { kanji: "左", meaning: "left",  romaji: "hidari",  emoji: "👈" },
+      { kanji: "東", meaning: "east",  romaji: "higashi", emoji: "🌅" },
+      { kanji: "西", meaning: "west",  romaji: "nishi",   emoji: "🌇" },
+      { kanji: "北", meaning: "north", romaji: "kita",    emoji: "❄️" },
+      { kanji: "南", meaning: "south", romaji: "minami",  emoji: "🌴" },
+    ]},
+    { name: "Animals & Sky", items: [
+      { kanji: "犬", meaning: "dog",  romaji: "inu",   emoji: "🐕" },
+      { kanji: "猫", meaning: "cat",  romaji: "neko",  emoji: "🐈" },
+      { kanji: "鳥", meaning: "bird", romaji: "tori",  emoji: "🐦" },
+      { kanji: "空", meaning: "sky",  romaji: "sora",  emoji: "☁️" },
+      { kanji: "星", meaning: "star", romaji: "hoshi", emoji: "⭐" },
+    ]},
+    { name: "Verbs", items: [
+      { kanji: "食", meaning: "eat",       romaji: "taberu", emoji: "🍚" },
+      { kanji: "飲", meaning: "drink",     romaji: "nomu",   emoji: "🥤" },
+      { kanji: "見", meaning: "see / look",romaji: "miru",   emoji: "👀" },
+      { kanji: "行", meaning: "go",        romaji: "iku",    emoji: "🚶" },
+    ]},
+    { name: "Adjectives", items: [
+      { kanji: "大", meaning: "big",             romaji: "ookii",  emoji: "🐘" },
+      { kanji: "小", meaning: "small",           romaji: "chiisai",emoji: "🐭" },
+      { kanji: "高", meaning: "tall / expensive",romaji: "takai",  emoji: "🏔️" },
+      { kanji: "安", meaning: "cheap / safe",    romaji: "yasui",  emoji: "💰" },
+    ]},
+    { name: "Family", items: [
+      { kanji: "父", meaning: "father", romaji: "chichi", emoji: "👨" },
+      { kanji: "母", meaning: "mother", romaji: "haha",   emoji: "👩" },
+    ]},
+  ];
+
+  const ALL = CATEGORIES.flatMap(c => c.items);
+
+  const STORAGE_KEY = "kanjiReviewer_mastered";
+  function loadMastered() {
+    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []); }
+    catch { return new Set(); }
+  }
+  function saveMastered(set) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+  }
+  let mastered = loadMastered();
+
+  // ---------- Grid view ----------
+  const gridView = document.getElementById("grid-view");
+  CATEGORIES.forEach(cat => {
+    const section = document.createElement("div");
+    section.className = "category";
+    const h2 = document.createElement("h2");
+    h2.textContent = cat.name;
+    section.appendChild(h2);
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    cat.items.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="emoji">${item.emoji}</div>
+        <div class="kanji">${item.kanji}</div>
+        <div class="meaning">${item.meaning}</div>
+        <div class="romaji">(${item.romaji})</div>
+      `;
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    gridView.appendChild(section);
+  });
+
+  // ---------- Quiz view ----------
+  let order = ALL.map((_, i) => i);
+  let pos = 0;
+
+  const flipCard = document.getElementById("flip-card");
+  const quizKanji = document.getElementById("quiz-kanji");
+  const quizEmojiBack = document.getElementById("quiz-emoji-back");
+  const quizMeaning = document.getElementById("quiz-meaning");
+  const quizRomaji = document.getElementById("quiz-romaji");
+  const quizProgress = document.getElementById("quiz-progress");
+  const quizBadge = document.getElementById("quiz-badge");
+
+  function renderQuiz() {
+    const item = ALL[order[pos]];
+    flipCard.classList.remove("flipped");
+    quizKanji.textContent = item.kanji;
+    quizEmojiBack.textContent = item.emoji;
+    quizMeaning.textContent = item.meaning;
+    quizRomaji.textContent = `(${item.romaji})`;
+    quizProgress.textContent = `Card ${pos + 1} of ${ALL.length} — ${mastered.size} mastered`;
+    quizBadge.textContent = mastered.has(item.kanji) ? "✅" : "";
+  }
+
+  function shuffle() {
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    pos = 0;
+    renderQuiz();
+  }
+
+  flipCard.addEventListener("click", () => flipCard.classList.toggle("flipped"));
+
+  document.getElementById("btn-next").addEventListener("click", () => {
+    pos = (pos + 1) % order.length;
+    renderQuiz();
+  });
+  document.getElementById("btn-prev").addEventListener("click", () => {
+    pos = (pos - 1 + order.length) % order.length;
+    renderQuiz();
+  });
+  document.getElementById("btn-shuffle").addEventListener("click", shuffle);
+  document.getElementById("btn-known").addEventListener("click", () => {
+    mastered.add(ALL[order[pos]].kanji);
+    saveMastered(mastered);
+    pos = (pos + 1) % order.length;
+    renderQuiz();
+  });
+  document.getElementById("btn-again").addEventListener("click", () => {
+    mastered.delete(ALL[order[pos]].kanji);
+    saveMastered(mastered);
+    pos = (pos + 1) % order.length;
+    renderQuiz();
+  });
+
+  // ---------- Mode toggle ----------
+  const gridViewEl = document.getElementById("grid-view");
+  const quizViewEl = document.getElementById("quiz-view");
+  const btnGrid = document.getElementById("btn-grid");
+  const btnQuiz = document.getElementById("btn-quiz");
+
+  btnGrid.addEventListener("click", () => {
+    gridViewEl.style.display = "block";
+    quizViewEl.style.display = "none";
+    btnGrid.classList.add("active");
+    btnQuiz.classList.remove("active");
+  });
+  btnQuiz.addEventListener("click", () => {
+    gridViewEl.style.display = "none";
+    quizViewEl.style.display = "flex";
+    btnQuiz.classList.add("active");
+    btnGrid.classList.remove("active");
+    renderQuiz();
+  });
+</script>
+</body>
+</html>
