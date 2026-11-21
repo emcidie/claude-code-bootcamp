@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  The Daily Brief news magazine: a private S3 bucket served through CloudFront,
+  and a Lambda function that refreshes the news every hour.
+
+Parameters:
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Anthropic API key for Claude summaries. Leave empty to show article excerpts instead.
+
+Conditions:
+  HasApiKey: !Not [!Equals [!Ref AnthropicApiKey, ""]]
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${AWS::StackName} news magazine"
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          # Managed "CachingOptimized" policy; it honours each file's Cache-Control.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          # Only CloudFront can read the site; the summary cache stays private.
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            NotResource: !Sub "${SiteBucket.Arn}/data/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  RefreshLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-refresh"
+      RetentionInDays: 14
+
+  RefreshRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: refresh-news
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt RefreshLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub "${SiteBucket.Arn}/news.json"
+                  - !Sub "${SiteBucket.Arn}/data/*"
+              # Lets GetObject report a missing cache as NoSuchKey on the first run.
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt SiteBucket.Arn
+
+  RefreshFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: RefreshLogGroup
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-refresh"
+      Description: Fetches and summarises the news, then publishes news.json.
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: aws/lambda.handler
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt RefreshRole.Arn
+      Environment:
+        Variables:
+          SITE_BUCKET: !Ref SiteBucket
+          ANTHROPIC_API_KEY: !If [HasApiKey, !Ref AnthropicApiKey, !Ref AWS::NoValue]
+      # Placeholder; deploy.sh uploads the real code straight after the stack is created.
+      Code:
+        ZipFile: "exports.handler = async () => { throw new Error('Run aws/deploy.sh to upload the code'); };"
+
+  HourlySchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Refresh the news magazine every hour.
+      ScheduleExpression: rate(1 hour)
+      Targets:
+        - Id: refresh
+          Arn: !GetAtt RefreshFunction.Arn
+
+  SchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RefreshFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt HourlySchedule.Arn
+
+Outputs:
+  SiteUrl:
+    Description: Your news magazine
+    Value: !Sub "https://${Distribution.DomainName}"
+  BucketName:
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref Distribution
+  FunctionName:
+    Value: !Ref RefreshFunction

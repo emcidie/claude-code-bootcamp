@@ -9,16 +9,18 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import Parser from "rss-parser";
 import { JSDOM, VirtualConsole } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import Anthropic from "@anthropic-ai/sdk";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CONFIG_FILE = path.join(ROOT, "config", "sources.json");
-const CACHE_FILE = path.join(ROOT, "data", "summaries.json");
-const OUTPUT_FILE = path.join(ROOT, "public", "news.json");
+const DEFAULT_PATHS = {
+  configFile: path.join(ROOT, "config", "sources.json"),
+  cacheFile: path.join(ROOT, "data", "summaries.json"),
+  outputFile: path.join(ROOT, "public", "news.json"),
+};
 
 const USER_AGENT = "Mozilla/5.0 (compatible; DailyBriefReader/1.0)";
 const FETCH_TIMEOUT_MS = 20_000;
@@ -45,104 +47,121 @@ KEY POINTS:
 - <point>
 - <point>`;
 
-const config = JSON.parse(await fs.readFile(CONFIG_FILE, "utf8"));
-const settings = {
-  maxArticlesPerSource: 8,
-  maxAgeHours: 48,
-  summaryModel: "claude-opus-5",
-  ...config.settings,
-};
-const follow = (config.follow ?? []).map((k) => k.trim()).filter(Boolean);
+// Settings for the current run, shared with the helpers below.
+let settings, follow, useClaude, claude;
 
-const useClaude =
-  process.env.NO_AI !== "1" &&
-  Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
-const claude = useClaude ? new Anthropic() : null;
+// Runs one refresh. The paths can be overridden (the AWS Lambda version reads
+// and writes under /tmp).
+export async function fetchNews({
+  configFile = DEFAULT_PATHS.configFile,
+  cacheFile = DEFAULT_PATHS.cacheFile,
+  outputFile = DEFAULT_PATHS.outputFile,
+} = {}) {
+  const config = JSON.parse(await fs.readFile(configFile, "utf8"));
+  settings = {
+    maxArticlesPerSource: 8,
+    maxAgeHours: 48,
+    summaryModel: "claude-opus-5",
+    ...config.settings,
+  };
+  follow = (config.follow ?? []).map((k) => k.trim()).filter(Boolean);
 
-const cache = await readJson(CACHE_FILE, {});
+  useClaude =
+    process.env.NO_AI !== "1" &&
+    Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  claude = useClaude ? new Anthropic() : null;
 
-const parser = new Parser({
-  timeout: FETCH_TIMEOUT_MS,
-  headers: { "User-Agent": USER_AGENT },
-  customFields: {
-    item: [
-      ["media:content", "mediaContent", { keepArray: true }],
-      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
-    ],
-  },
-});
+  const cache = await readJson(cacheFile, {});
 
-console.log(
-  `Summaries: ${useClaude ? `Claude (${settings.summaryModel})` : "article excerpt (no ANTHROPIC_API_KEY set)"}`,
-);
-if (follow.length) console.log(`Following: ${follow.join(", ")}`);
+  const parser = new Parser({
+    timeout: FETCH_TIMEOUT_MS,
+    headers: { "User-Agent": USER_AGENT },
+    customFields: {
+      item: [
+        ["media:content", "mediaContent", { keepArray: true }],
+        ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+      ],
+    },
+  });
 
-// 1. Collect candidate stories from every feed.
-const candidates = [];
-for (const source of config.sources ?? []) {
-  if (source.enabled === false) continue;
-  try {
-    const feed = await parser.parseURL(source.feed);
-    const items = feed.items
-      .map((item) => toCandidate(item, source))
-      .filter((c) => isWebUrl(c.url) && c.title)
-      .filter((c) => isRecent(c.publishedAt))
-      .filter((c) => matchesFollow(c, source))
-      .slice(0, source.maxArticles ?? settings.maxArticlesPerSource);
-    console.log(`✓ ${source.name}: ${items.length} stories`);
-    candidates.push(...items);
-  } catch (err) {
-    console.warn(`✗ ${source.name}: could not read feed (${err.message})`);
-  }
-}
+  console.log(
+    `Summaries: ${useClaude ? `Claude (${settings.summaryModel})` : "article excerpt (no ANTHROPIC_API_KEY set)"}`,
+  );
+  if (follow.length) console.log(`Following: ${follow.join(", ")}`);
 
-// Different feeds sometimes carry the same story.
-const unique = [...new Map(candidates.map((c) => [c.id, c])).values()];
-
-// 2. Read and summarise each story (summaries are cached by URL).
-const articles = await mapLimit(unique, CONCURRENCY, async (story) => {
-  const cached = cache[story.id];
-  // A cached excerpt is upgraded once a Claude key is available.
-  const wantsClaude = useClaude && cached?.summarizedBy !== "claude";
-  if (cached && !wantsClaude) return { ...story, ...cached.data };
-
-  const page = await readArticle(story.url);
-  const text = page.text || story.feedText;
-  // The article page's share image is usually larger than the feed thumbnail.
-  const image = page.image || story.image || null;
-
-  let summary;
-  let summarizedBy = "excerpt";
-  if (useClaude && text.length > 200) {
+  // 1. Collect candidate stories from every feed.
+  const candidates = [];
+  for (const source of config.sources ?? []) {
+    if (source.enabled === false) continue;
     try {
-      summary = await summariseWithClaude(story, text);
-      summarizedBy = "claude";
+      const feed = await parser.parseURL(source.feed);
+      const items = feed.items
+        .map((item) => toCandidate(item, source))
+        .filter((c) => isWebUrl(c.url) && c.title)
+        .filter((c) => isRecent(c.publishedAt))
+        .filter((c) => matchesFollow(c, source))
+        .slice(0, source.maxArticles ?? settings.maxArticlesPerSource);
+      console.log(`✓ ${source.name}: ${items.length} stories`);
+      candidates.push(...items);
     } catch (err) {
-      console.warn(`  ! Claude could not summarise "${story.title}": ${err.message}`);
+      console.warn(`✗ ${source.name}: could not read feed (${err.message})`);
     }
   }
-  summary ??= excerptSummary(text);
 
-  const data = { image, ...summary, summarizedBy };
-  cache[story.id] = { data, summarizedBy, savedAt: new Date().toISOString() };
-  return { ...story, ...data };
-});
+  // Different feeds sometimes carry the same story.
+  const unique = [...new Map(candidates.map((c) => [c.id, c])).values()];
 
-// 3. Save the page data and the summary cache.
-const published = articles
-  .filter(Boolean)
-  .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-  .map(({ feedText, ...a }) => a);
+  // 2. Read and summarise each story (summaries are cached by URL).
+  const articles = await mapLimit(unique, CONCURRENCY, async (story) => {
+    const cached = cache[story.id];
+    // A cached excerpt is upgraded once a Claude key is available.
+    const wantsClaude = useClaude && cached?.summarizedBy !== "claude";
+    if (cached && !wantsClaude) return { ...story, ...cached.data };
 
-await writeJson(OUTPUT_FILE, {
-  siteTitle: config.siteTitle ?? "The Daily Brief",
-  tagline: config.tagline ?? "",
-  follow,
-  generatedAt: new Date().toISOString(),
-  articles: published,
-});
-await writeJson(CACHE_FILE, pruneCache(cache));
-console.log(`\nSaved ${published.length} stories to public/news.json`);
+    const page = await readArticle(story.url);
+    const text = page.text || story.feedText;
+    // The article page's share image is usually larger than the feed thumbnail.
+    const image = page.image || story.image || null;
+
+    let summary;
+    let summarizedBy = "excerpt";
+    if (useClaude && text.length > 200) {
+      try {
+        summary = await summariseWithClaude(story, text);
+        summarizedBy = "claude";
+      } catch (err) {
+        console.warn(`  ! Claude could not summarise "${story.title}": ${err.message}`);
+      }
+    }
+    summary ??= excerptSummary(text);
+
+    const data = { image, ...summary, summarizedBy };
+    cache[story.id] = { data, summarizedBy, savedAt: new Date().toISOString() };
+    return { ...story, ...data };
+  });
+
+  // 3. Save the page data and the summary cache.
+  const published = articles
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+    .map(({ feedText, ...a }) => a);
+
+  await writeJson(outputFile, {
+    siteTitle: config.siteTitle ?? "The Daily Brief",
+    tagline: config.tagline ?? "",
+    follow,
+    generatedAt: new Date().toISOString(),
+    articles: published,
+  });
+  await writeJson(cacheFile, pruneCache(cache));
+  console.log(`\nSaved ${published.length} stories to ${outputFile}`);
+    return published.length;
+}
+
+// Run directly with `npm run fetch`.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await fetchNews();
+}
 
 // ---------------------------------------------------------------------------
 

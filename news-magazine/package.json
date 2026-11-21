@@ -18,5 +18,8 @@
     "@mozilla/readability": "^0.6.0",
     "jsdom": "^31.0.1",
     "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1175.0"
   }
 }

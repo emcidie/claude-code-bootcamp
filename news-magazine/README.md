@@ -67,9 +67,35 @@ Each source takes:
 
 Most publishers link their feed from an "RSS" icon or a `/rss` page. Some sites have a paywall or block automated readers. Their stories still appear, but the summary is based on the feed's teaser text.
 
-## Put it online (GitHub Pages, refreshed hourly)
+## Put it online on AWS (refreshed hourly)
 
-`.github/workflows/publish.yml` fetches the news every hour and publishes the page. GitHub only runs workflows at the root of a repository, so give this folder its own repository first:
+`aws/deploy.sh` sets up the whole site in your AWS account with CloudFormation:
+
+- a private **S3 bucket** that holds the page,
+- **CloudFront** serving it over HTTPS,
+- a **Lambda function** that fetches and summarises the news every hour and writes `news.json` to the bucket.
+
+You need the [AWS CLI](https://aws.amazon.com/cli/) signed in to your account (`aws sts get-caller-identity` should show your account), plus Node.js 20+, npm and zip.
+
+```bash
+cd news-magazine
+export AWS_REGION=ap-southeast-1           # any region; defaults to your CLI's region, then us-east-1
+export ANTHROPIC_API_KEY=sk-ant-...        # optional, for Claude summaries
+./aws/deploy.sh
+```
+
+The first run takes about 5–10 minutes, most of it waiting for CloudFront. When it finishes it prints your site's address (`https://xxxx.cloudfront.net`).
+
+- **Changing sources:** edit `config/sources.json` and run `./aws/deploy.sh` again. Later runs keep the saved API key unless you export a new one.
+- **Logs:** `aws logs tail /aws/lambda/news-magazine-refresh --follow`
+- **Refresh now:** `aws lambda invoke --function-name news-magazine-refresh /dev/null`
+- **Remove everything:** empty the bucket (`aws s3 rm s3://<BucketName> --recursive`), then `aws cloudformation delete-stack --stack-name news-magazine`.
+
+The API key is stored as an environment variable on the Lambda function, so anyone with access to that function in your AWS account can see it. For a personal site, the AWS side (24 short Lambda runs a day, a small bucket and light CloudFront traffic) usually fits in AWS's free tier, or costs a dollar or two a month beyond it. The Claude summaries are billed separately; see Cost below.
+
+## Put it online with GitHub Pages instead (refreshed hourly)
+
+`.github/workflows/publish.yml` fetches the news every hour and publishes the page. GitHub only runs workflows at the root of a repository, so the folder needs to be the root of its own repository:
 
 1. Create a new GitHub repository and push the contents of this `news-magazine` folder to its `main` branch.
 2. In that repository, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
