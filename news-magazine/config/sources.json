@@ -1,0 +1,26 @@
+{
+  "_help": "Edit this file to choose where your news comes from. See README.md for every option.",
+
+  "siteTitle": "The Daily Brief",
+  "tagline": "News from sources you trust",
+
+  "follow": [],
+
+  "settings": {
+    "maxArticlesPerSource": 8,
+    "maxAgeHours": 48,
+    "summaryModel": "claude-opus-5"
+  },
+
+  "sources": [
+    { "name": "BBC News",       "feed": "https://feeds.bbci.co.uk/news/world/rss.xml",              "section": "World" },
+    { "name": "NPR",            "feed": "https://feeds.npr.org/1001/rss.xml",                        "section": "World" },
+    { "name": "The Guardian",   "feed": "https://www.theguardian.com/world/rss",                     "section": "World" },
+    { "name": "Al Jazeera",     "feed": "https://www.aljazeera.com/xml/rss/all.xml",                 "section": "World" },
+    { "name": "CNBC",           "feed": "https://www.cnbc.com/id/10001147/device/rss/rss.html",      "section": "Business" },
+    { "name": "BBC Business",   "feed": "https://feeds.bbci.co.uk/news/business/rss.xml",           "section": "Business" },
+    { "name": "Ars Technica",   "feed": "https://feeds.arstechnica.com/arstechnica/index",           "section": "Technology" },
+    { "name": "BBC Technology", "feed": "https://feeds.bbci.co.uk/news/technology/rss.xml",         "section": "Technology" },
+    { "name": "BBC Science",    "feed": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", "section": "Science" }
+  ]
+}
